@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0px;
+            padding: 0px;
+            box-sizing: border-box;
+        }
+        
+        .cont {
+            width: 90%;
+            margin: auto;
+            height: 90vh;
+            display: flex;
+            margin-top: 20px;
+        }
+        
+        #img {
+            width: 50%;
+        }
+        
+        .text {
+            width: 45%;
+            margin-left: 5%;
+            /* border: 1px solid red; */
+            padding: 2%;
+        }
+        
+        .text h1 {
+            margin-bottom: 20px;
+        }
+        
+        .text h2 {
+            font-weight: normal;
+            margin-bottom: 10px;
+        }
+        
+        .text h3 {
+            font-weight: normal;
+            color: grey;
+            margin-bottom: 5px;
+        }
+        
+        #plot {
+            height: 200px;
+            padding: 2%;
+            border: 1px solid rgb(197, 196, 196);
+            overflow-y: scroll;
+            margin-top: 30px;
+        }
+        
+        #plot::-webkit-scrollbar {
+            display: none;
+        }
+        
+        #plot:hover {
+            box-shadow: 4px 4px 4px 4px rgb(177, 176, 176);
+        }
+    </style>
+</head>
+
+
+<body>
+    <div class="cont">
+        <div id="img"></div>
+        <div class="text">
+            <h1 id="title"></h1>
+            <h2 id="actor"></h2>
+            <h3 id="country"></h3>
+            <h3 id="rating"></h3>
+            <h3 id="genere"></h3>
+            <h3 id="plot"></h3>
+        </div>
+    </div>
+    <div id="video"></div>
+</body>
+<script>
+    let id = localStorage.getItem("movie-app-imdb-data");
+    let id2 = localStorage.getItem("movie-app-tmdb-data");
+    let videoid;
+
+    let img = document.getElementById("img");
+    let title = document.getElementById("title");
+    let actor = document.getElementById("actor");
+    let country = document.getElementById("country");
+    let rating = document.getElementById("rating");
+    let genere = document.getElementById("genere");
+    let plot = document.getElementById("plot");
+
+    async function Fetch(id, url, id2) {
+        let res = await fetch(url + id);
+        let data = await res.json();
+
+        if (id2 != null) {
+            let res2 = await fetch(
+                `https://api.themoviedb.org/3/movie/${id2}/videos?api_key=84bd2ca964c1790070846809a1b4300b&language=en-US`
+            );
+            let data2 = await res2.json();
+            console.log(data2);
+            let videoid = null;
+            data2.results.forEach((element) => {
+                if (element.type == "Teaser" && element.site == "YouTube") {
+                    videoid = element.key;
+                }
+            });
+            DOM(data, videoid);
+        } else {
+            DOM(data, null);
+        }
+    }
+
+    function DOM(data, videoId) {
+        if (data.Poster == "N/A" || data.Poster == null || data.Poster == undefined) {
+            img.style.background = `url("notposter.jpg")`;
+        } else {
+            img.style.background = `url(${data.Poster})`;
+        }
+        img.style.backgroundSize = "cover";
+        if (videoId != null) {
+            img.innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+        }
+        title.textContent = data.Title;
+        actor.textContent = "Actors:- " + data.Actors;
+        country.textContent = "Country:- " + data.Country + "(" + data.Language + ")";
+        let firstRating;
+        if (data.Ratings.length == 0) {
+            firstRating = "Rating:- N/A";
+        } else {
+            firstRating = "Rating:- " + data.Ratings[0].Rating;
+        }
+        rating.textContent = firstRating;
+        genere.textContent = "Genere:- " + data.Genre;
+        plot.textContent = "Plot:- " + data.Plot;
+    }
+    if (id == null) {
+        fetch(
+                `https://api.themoviedb.org/3/movie/${id2}/external_ids?api_key=84bd2ca964c1790070846809a1b4300b`
+            )
+            .then((res) => {
+                return res.json();
+            })
+            .then((res) => {
+                // console.log(res);
+                id = res.imdb_id;
+                Fetch(id, `http://www.omdbapi.com/?apikey=d26a1acc&i=`, id2);
+            });
+    } else {
+        fetch(
+                `https://api.themoviedb.org/3/find/${id}?api_key=84bd2ca964c1790070846809a1b4300b&language=en-US&external_source=imdb_id`
+            )
+            .then((res) => {
+                return res.json();
+            })
+            .then((res) => {
+                // console.log(res);
+                if (res.movie_results.length > 0) {
+                    id2 = res.movie_results[0].id;
+                } else {
+                    id2 = null;
+                }
+                Fetch(id, `http://www.omdbapi.com/?apikey=d26a1acc&i=`, id2);
+            });
+    }
+    //
+</script>
+
+</html>
